@@ -51,15 +51,15 @@ function AISyncFanAccessory(api, log, accessory, device, status, session) {
 
 AISyncFanAccessory.prototype = {
   eventUpdate: function (data) {
-    const status = data.data.changes.status;
+    if (data && data.data && data.data.changes && data.data.changes.status) {
+      const status = data.data.changes.status;
 
-    if (status === undefined) {
+      this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H00 || false);
+      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(status.H02 || 0);
+      this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H0B || false);
+    } else {
       this.log('Undefined status. Dumping data:');
       this.log(data);
-    } else {
-      this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H00);
-      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(status.H02);
-      this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H0B);
     }
   },
 
@@ -67,7 +67,7 @@ AISyncFanAccessory.prototype = {
     const state = this.service.getCharacteristic(this.api.hap.Characteristic.On).value;
 
     this.aisync.deviceStatus(this.deviceId, (data) => {
-      if (data.data.status.H00 == 1) {
+      if (data && data.data && data.data.status && data.data.status.H00 == 1) {
         this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(true);
       } else {
         this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(false);
@@ -107,7 +107,7 @@ AISyncFanAccessory.prototype = {
     const state = this.lightService.getCharacteristic(this.api.hap.Characteristic.On).value;
 
     this.aisync.deviceStatus(this.deviceId, (data) => {
-      if (data.data.status.H0B == 1) {
+      if (data && data.data && data.data.status && data.data.status.H0B == 1) {
         this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(true);
       } else {
         this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(false);

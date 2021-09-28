@@ -50,11 +50,13 @@ AISync.prototype = {
   },
 
   eventHandler: function (data) {
-    const uuid = UUIDGen.generate(data.data.device);
-    const accessory = this.accessories[uuid];
+    if (data && data.data && data.data.device) {
+      const uuid = UUIDGen.generate(data.data.device);
+      const accessory = this.accessories[uuid];
 
-    if (accessory) {
-      accessory.eventUpdate(data);
+      if (accessory) {
+        accessory.eventUpdate(data);
+      }
     }
   },
 
@@ -72,22 +74,24 @@ AISync.prototype = {
 
   addAccessories: function (device) {
     this.aisync.deviceStatus(device.device, (deviceStatus) => {
-      const uuid = UUIDGen.generate(deviceStatus.data.device);
+      if (deviceStatus && deviceStatus.data && deviceStatus.data.device) {
+        const uuid = UUIDGen.generate(deviceStatus.data.device);
 
-      //Add fan
-      const accessory = this.accessories[uuid];
+        //Add fan
+        const accessory = this.accessories[uuid];
 
-      if (accessory === undefined) {
-        this.registerFanAccessory(device, deviceStatus);
-      } else {
-        this.accessories[uuid] = new AISyncFanAccessory(
-          this.api,
-          this.log,
-          accessory instanceof AISyncFanAccessory ? accessory.accessory : accessory,
-          device,
-          deviceStatus,
-          this.aisync
-        );
+        if (accessory === undefined) {
+          this.registerFanAccessory(device, deviceStatus);
+        } else {
+          this.accessories[uuid] = new AISyncFanAccessory(
+            this.api,
+            this.log,
+            accessory instanceof AISyncFanAccessory ? accessory.accessory : accessory,
+            device,
+            deviceStatus,
+            this.aisync
+          );
+        }
       }
     });
   },
