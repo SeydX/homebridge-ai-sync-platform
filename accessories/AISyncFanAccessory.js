@@ -7,7 +7,7 @@ function AISyncFanAccessory(api, log, accessory, device, status, session) {
   this.deviceId = device.device;
 
   //AccessoryInformation
-  const AccessoryInformation = this.accessory.getService(api.hap.Service.AccessoryInformation);
+  const AccessoryInformation = this.accessory.getService(this.api.hap.Service.AccessoryInformation);
 
   this.accessory.context.manufacturer = status.data.profile.esh.brand.toString() || 'AiSync';
   this.accessory.context.model = status.data.profile.esh.model.toString() || 'AiSync';
