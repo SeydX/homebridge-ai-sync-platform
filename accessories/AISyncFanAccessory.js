@@ -14,10 +14,10 @@ function AISyncFanAccessory(api, log, accessory, device, status, session) {
   this.accessory.context.serial = status.data.profile.module.mac_address.toString() || '000000';
   this.accessory.context.revision = status.data.profile.module.firmware_version.toString() || '1.0';
 
-  AccessoryInformation.setCharacteristic(api.hap.Characteristic.Manufacturer, this.accessory.context.manufacturer);
-  AccessoryInformation.setCharacteristic(api.hap.Characteristic.Model, this.accessory.context.model);
-  AccessoryInformation.setCharacteristic(api.hap.Characteristic.SerialNumber, this.accessory.context.serial);
-  AccessoryInformation.setCharacteristic(api.hap.Characteristic.FirmwareRevision, this.accessory.context.revision);
+  AccessoryInformation.setCharacteristic(this.api.hap.Characteristic.Manufacturer, this.accessory.context.manufacturer);
+  AccessoryInformation.setCharacteristic(this.api.hap.Characteristic.Model, this.accessory.context.model);
+  AccessoryInformation.setCharacteristic(this.api.hap.Characteristic.SerialNumber, this.accessory.context.serial);
+  AccessoryInformation.setCharacteristic(this.api.hap.Characteristic.FirmwareRevision, this.accessory.context.revision);
 
   //Service.Fan
   this.service = this.accessory.getService(this.api.hap.Service.Fan);
