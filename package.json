@@ -1,6 +1,6 @@
 {
   "name": "@seydx/homebridge-ai-sync-platform",
-  "version": "1.0.0",
+  "version": "1.0.1-beta.0",
   "description": "Homebridge plugin for ai-control fans",
   "main": "index.js",
   "scripts": {
@@ -20,11 +20,7 @@
     "homebridge": "^1.3.0"
   },
   "dependencies": {
-    "ai-sync-api": "^0.0.2",
-    "events": "^3.3.0",
-    "request": "^2.88.2",
-    "util": "^0.12.4",
-    "ws": "^7.5.5"
+    "ai-sync-api": "^0.0.2"
   },
   "devDependencies": {
     "@babel/core": "7.15.5",
@@ -38,10 +34,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wylanswets/homebridge-ai-sync-platform.git"
+    "url": "git+https://github.com/seydx/homebridge-ai-sync-platform.git"
   },
   "bugs": {
-    "url": "https://github.com/wylanswets/homebridge-ai-sync-platform/issues"
+    "url": "https://github.com/seydx/homebridge-ai-sync-platform/issues"
   },
-  "homepage": "https://github.com/wylanswets/homebridge-ai-sync-platform#readme"
+  "homepage": "https://github.com/seydx/homebridge-ai-sync-platform#readme"
 }

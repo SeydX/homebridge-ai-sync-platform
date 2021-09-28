@@ -1,12 +1,25 @@
-var AISyncAccessory = require('./AISyncAccessory.js');
-
 function AISyncFanAccessory(api, log, accessory, device, status, session) {
-  AISyncAccessory.call(this, api, log, accessory, device, status, session);
-
   this.api = api;
   this.log = log;
-  this.fan = device;
+  this.accessory = accessory;
 
+  this.fan = device;
+  this.deviceId = device.device;
+
+  //AccessoryInformation
+  const AccessoryInformation = this.accessory.getService(api.hap.Service.AccessoryInformation);
+
+  this.accessory.context.manufacturer = status.data.profile.esh.brand.toString() || 'AiSync';
+  this.accessory.context.model = status.data.profile.esh.model.toString() || 'AiSync';
+  this.accessory.context.serial = status.data.profile.module.mac_address.toString() || '000000';
+  this.accessory.context.revision = status.data.profile.module.firmware_version.toString() || '1.0';
+
+  AccessoryInformation.setCharacteristic(api.hap.Characteristic.Manufacturer, this.accessory.context.manufacturer);
+  AccessoryInformation.setCharacteristic(api.hap.Characteristic.Model, this.accessory.context.model);
+  AccessoryInformation.setCharacteristic(api.hap.Characteristic.SerialNumber, this.accessory.context.serial);
+  AccessoryInformation.setCharacteristic(api.hap.Characteristic.FirmwareRevision, this.accessory.context.revision);
+
+  //Service.Fan
   this.service = this.accessory.getService(this.api.hap.Service.Fan);
 
   this.service
@@ -25,6 +38,7 @@ function AISyncFanAccessory(api, log, accessory, device, status, session) {
     .on('set', this._setSpeedState.bind(this));
 
   this.lightService = this.accessory.getService(this.api.hap.Service.Lightbulb);
+
   this.lightService
     .getCharacteristic(this.api.hap.Characteristic.On)
     .on('get', this._getCurrentLightState.bind(this))
@@ -43,16 +57,14 @@ AISyncFanAccessory.prototype = {
       this.log('Undefined status. Dumping data:');
       this.log(data);
     } else {
-      this.service.getCharacteristic(this.api.hap.Characteristic.On).setValue(status.H00, null, 'internal');
-      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).setValue(status.H02, null, 'internal');
-
-      this.lightService.getCharacteristic(this.api.hap.Characteristic.On).setValue(status.H0B, null, 'internal');
+      this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H00);
+      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(status.H02);
+      this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H0B);
     }
   },
 
   _getCurrentState: function (callback) {
     const state = this.service.getCharacteristic(this.api.hap.Characteristic.On).value;
-    callback(null, state);
 
     this.aisync.deviceStatus(this.deviceId, (data) => {
       if (data.data.status.H00 == 1) {
@@ -61,48 +73,38 @@ AISyncFanAccessory.prototype = {
         this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(false);
       }
     });
+
+    callback(null, state);
   },
 
-  _setOnOffState: function (targetState, callback, context) {
-    callback(null);
-
-    if (context == 'internal') {
-      return; // we set this state ourself, no need to react to it
-    }
-
+  _setOnOffState: function (targetState, callback) {
     const val = targetState === true ? 1 : 0;
 
     // eslint-disable-next-line no-unused-vars
-    this.aisync.fanOnOff(this.deviceId, val, (data) => {
-      this.log(`State: ${targetState ? 'ON' : 'OFF'}`);
-    });
+    this.aisync.fanOnOff(this.deviceId, val, (data) => this.log(`State: ${targetState ? 'ON' : 'OFF'}`));
+
+    callback(null);
   },
 
   _getSpeedState: function (callback) {
     const state = this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).value;
-    callback(null, state);
 
-    this.aisync.deviceStatus(this.deviceId, (data) => {
-      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(data.data.status.H02);
-    });
+    this.aisync.deviceStatus(this.deviceId, (data) =>
+      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(data.data.status.H02)
+    );
+
+    callback(null, state);
   },
 
-  _setSpeedState: function (targetValue, callback, context) {
-    callback(null);
-
-    if (context == 'internal') {
-      return; // we set this state ourself, no need to react to it
-    }
-
+  _setSpeedState: function (targetValue, callback) {
     // eslint-disable-next-line no-unused-vars
-    this.aisync.fanSpeed(this.deviceId, targetValue, (data) => {
-      this.log(`Rotation  Speed: ${targetValue}`);
-    });
+    this.aisync.fanSpeed(this.deviceId, targetValue, (data) => this.log(`Rotation  Speed: ${targetValue}`));
+
+    callback(null);
   },
 
   _getCurrentLightState: function (callback) {
     const state = this.lightService.getCharacteristic(this.api.hap.Characteristic.On).value;
-    callback(null, state);
 
     this.aisync.deviceStatus(this.deviceId, (data) => {
       if (data.data.status.H0B == 1) {
@@ -111,21 +113,17 @@ AISyncFanAccessory.prototype = {
         this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(false);
       }
     });
+
+    callback(null, state);
   },
 
-  _setLightOnOffState: function (targetState, callback, context) {
-    callback(null);
-
-    if (context == 'internal') {
-      return; // we set this state ourself, no need to react to it
-    }
-
+  _setLightOnOffState: function (targetState, callback) {
     var val = targetState === true ? 1 : 0;
 
     // eslint-disable-next-line no-unused-vars
-    this.aisync.lightOnOff(this.deviceId, val, (data) => {
-      this.log(`Light: ${targetState ? 'ON' : 'OFF'}`);
-    });
+    this.aisync.lightOnOff(this.deviceId, val, (data) => this.log(`Light: ${targetState ? 'ON' : 'OFF'}`));
+
+    callback(null);
   },
 };
 
