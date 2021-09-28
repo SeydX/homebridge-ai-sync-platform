@@ -1,6 +1,6 @@
 {
   "name": "@seydx/homebridge-ai-sync-platform",
-  "version": "1.0.1-beta.1",
+  "version": "1.1.0",
   "description": "Homebridge plugin for ai-control fans",
   "main": "index.js",
   "scripts": {
