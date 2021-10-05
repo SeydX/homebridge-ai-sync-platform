@@ -1,6 +1,7 @@
-function AISyncFanAccessory(api, log, accessory, device, status, session) {
+function AISyncFanAccessory(api, log, accessory, device, status, session, debug) {
   this.api = api;
   this.log = log;
+  this.debug = debug;
   this.accessory = accessory;
 
   this.fan = device;
@@ -51,15 +52,22 @@ function AISyncFanAccessory(api, log, accessory, device, status, session) {
 
 AISyncFanAccessory.prototype = {
   eventUpdate: function (data) {
+    if (this.debug) {
+      this.log(`[DEBUG] ${this.accessory.displayName}: Event Update`);
+      this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data)}`);
+    }
+
     if (data && data.data && data.data.changes && data.data.changes.status) {
       const status = data.data.changes.status;
 
-      this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H00 || false);
+      this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H00 === 1);
       this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(status.H02 || 0);
-      this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H0B || false);
+      this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(status.H0B === 1);
     } else {
-      this.log('Undefined status. Dumping data:');
-      this.log(data);
+      if (this.debug) {
+        this.log(`[DEBUG] ${this.accessory.displayName}: Undefined status. Dumping data:`);
+        this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data) || data}`);
+      }
     }
   },
 
@@ -67,10 +75,18 @@ AISyncFanAccessory.prototype = {
     const state = this.service.getCharacteristic(this.api.hap.Characteristic.On).value;
 
     this.aisync.deviceStatus(this.deviceId, (data) => {
-      if (data && data.data && data.data.status && data.data.status.H00 == 1) {
-        this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(true);
+      if (this.debug) {
+        this.log(`[DEBUG] ${this.accessory.displayName}: Get Current State`);
+        this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data)}`);
+      }
+
+      if (data && data.data && data.data.status) {
+        this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(data.data.status.H00 === 1);
       } else {
-        this.service.getCharacteristic(this.api.hap.Characteristic.On).updateValue(false);
+        if (this.debug) {
+          this.log(`[DEBUG] ${this.accessory.displayName}: Undefined status. Dumping data:`);
+          this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data) || data}`);
+        }
       }
     });
 
@@ -81,7 +97,9 @@ AISyncFanAccessory.prototype = {
     const val = targetState === true ? 1 : 0;
 
     // eslint-disable-next-line no-unused-vars
-    this.aisync.fanOnOff(this.deviceId, val, (data) => this.log(`State: ${targetState ? 'ON' : 'OFF'}`));
+    this.aisync.fanOnOff(this.deviceId, val, (data) =>
+      this.log(`${this.accessory.displayName}: State: ${targetState ? 'ON' : 'OFF'}`)
+    );
 
     callback(null);
   },
@@ -89,16 +107,31 @@ AISyncFanAccessory.prototype = {
   _getSpeedState: function (callback) {
     const state = this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).value;
 
-    this.aisync.deviceStatus(this.deviceId, (data) =>
-      this.service.getCharacteristic(this.api.hap.Characteristic.RotationSpeed).updateValue(data.data.status.H02)
-    );
+    this.aisync.deviceStatus(this.deviceId, (data) => {
+      if (data && data.data && data.data.status) {
+        /*if(this.debug){
+          this.log(`[DEBUG] ${this.accessory.displayName}: Get Speed State`);
+          this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data, null, 2)}`);
+        }*/
+        this.service
+          .getCharacteristic(this.api.hap.Characteristic.RotationSpeed)
+          .updateValue(data.data.status.H02 || 0);
+      } /*else {
+        if (this.debug) {
+          this.log(`[DEBUG] ${this.accessory.displayName}: Undefined status. Dumping data:`);
+          this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data) || data}`);
+        }
+      }*/
+    });
 
     callback(null, state);
   },
 
   _setSpeedState: function (targetValue, callback) {
     // eslint-disable-next-line no-unused-vars
-    this.aisync.fanSpeed(this.deviceId, targetValue, (data) => this.log(`Rotation  Speed: ${targetValue}`));
+    this.aisync.fanSpeed(this.deviceId, targetValue, (data) =>
+      this.log(`${this.accessory.displayName}: Rotation Speed: ${targetValue}`)
+    );
 
     callback(null);
   },
@@ -107,11 +140,18 @@ AISyncFanAccessory.prototype = {
     const state = this.lightService.getCharacteristic(this.api.hap.Characteristic.On).value;
 
     this.aisync.deviceStatus(this.deviceId, (data) => {
-      if (data && data.data && data.data.status && data.data.status.H0B == 1) {
-        this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(true);
-      } else {
-        this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(false);
-      }
+      if (data && data.data && data.data.status) {
+        /*if(this.debug){
+          this.log(`[DEBUG] ${this.accessory.displayName}: Get Current Light State`);
+          this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data, null, 2)}`);
+        }*/
+        this.lightService.getCharacteristic(this.api.hap.Characteristic.On).updateValue(data.data.status.H0B === 1);
+      } /*else {
+        if (this.debug) {
+          this.log(`[DEBUG] ${this.accessory.displayName}: Undefined status. Dumping data:`);
+          this.log(`[DEBUG] ${this.accessory.displayName}: ${JSON.stringify(data) || data}`);
+        }
+      }*/
     });
 
     callback(null, state);
@@ -121,7 +161,9 @@ AISyncFanAccessory.prototype = {
     var val = targetState === true ? 1 : 0;
 
     // eslint-disable-next-line no-unused-vars
-    this.aisync.lightOnOff(this.deviceId, val, (data) => this.log(`Light: ${targetState ? 'ON' : 'OFF'}`));
+    this.aisync.lightOnOff(this.deviceId, val, (data) =>
+      this.log(`${this.accessory.displayName}: Light: ${targetState ? 'ON' : 'OFF'}`)
+    );
 
     callback(null);
   },

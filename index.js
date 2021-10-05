@@ -1,4 +1,4 @@
-var AISyncApi = require('ai-sync-api').AISyncApi;
+var AISyncApi = require('@seydx/ai-sync-api').AISyncApi;
 var Accessory, Service, UUIDGen;
 
 var AISyncFanAccessory = require('./accessories/AISyncFanAccessory');
@@ -21,11 +21,13 @@ function AISync(log, config, api) {
 
   this.api = api;
   this.log = log;
+  this.config = config;
   this.accessories = [];
+
+  this.debug = config.debug || false;
 
   this.subscribed = false;
   this.aisync = null;
-  this.config = config;
 
   this.api.on('didFinishLaunching', this.didFinishLaunching.bind(this));
 }
@@ -83,13 +85,18 @@ AISync.prototype = {
         if (accessory === undefined) {
           this.registerFanAccessory(device, deviceStatus);
         } else {
+          const acc = accessory instanceof AISyncFanAccessory ? accessory.accessory : accessory;
+
+          this.log(`Initializing Device: ${acc.displayName}`);
+
           this.accessories[uuid] = new AISyncFanAccessory(
             this.api,
             this.log,
-            accessory instanceof AISyncFanAccessory ? accessory.accessory : accessory,
+            acc,
             device,
             deviceStatus,
-            this.aisync
+            this.aisync,
+            this.debug
           );
         }
       }
@@ -101,17 +108,19 @@ AISync.prototype = {
     const name = device.properties.displayName == '' ? 'Fan' : device.properties.displayName;
     const acc = new Accessory(name, uuid);
 
+    this.log(`Registering new Device: ${name}`);
+
     acc.addService(Service.Fan);
     acc.addService(Service.Lightbulb);
 
-    this.accessories[uuid] = new AISyncFanAccessory(this.log, acc, device, status, this.aisync);
+    this.accessories[uuid] = new AISyncFanAccessory(this.api, this.log, acc, device, status, this.aisync, this.debug);
 
     this.api.registerPlatformAccessories('homebridge-ai-sync-platform', 'AISync', [acc]);
   },
 
   removeAccessory: function (accessory) {
     if (accessory) {
-      this.log('[' + accessory.name + '] Removed from HomeBridge.');
+      this.log(`Removing Device: ${accessory.name}`);
       if (this.accessories[accessory.UUID]) {
         delete this.accessories[accessory.UUID];
       }

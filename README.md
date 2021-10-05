@@ -13,7 +13,8 @@ To configure, add this to your homebridge config.json file:
             "platform": "AISync",
             "name": "AISync Platform",
             "email": "your_email@email.com",
-            "password": "your_password"
+            "password": "your_password",
+            "debug": false
         }
     ]
 
